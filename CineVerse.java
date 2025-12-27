@@ -269,3 +269,221 @@ static void rateMovie(Context ctx) {
     System.out.println("Rating recorded successfully");
 
 }
+static void manageWatchlist(Context ctx) {
+
+    System.out.println("1. Add 2. Remove 3. View");
+    int c = readInt(ctx);
+
+    if (c == 3) {
+        renderMovies(ctx.movies.stream()
+        .filter(m -> ctx.activeUser.watchlist.contains(m.id))
+        .collect(Collectors.toList()));
+    } else {
+        System.out.print("Movie ID: ");
+        int id = readInt(ctx);
+
+        if (c == 1) ctx.activeUser.watchlist.add(id);
+        if (c == 2) ctx.activeUser.watchlist.remove(id);
+    }
+
+}
+
+static void recommendMovies(Context ctx) {
+
+    Map<String, Integer> genreScore = buildGenreScore(ctx);
+
+    List<Movie> recs = ctx.movies.stream()
+    .sorted((a, b) -> Double.compare(
+    calculateScore(b, genreScore), calculateScore(a, genreScore)))
+    .limit(10)
+    .collect(Collectors.toList());
+
+}
+static void manageWatchlist(Context ctx) {
+
+    System.out.println("1. Add 2. Remove 3. View");
+    int c = readInt(ctx);
+
+    if (c == 3) {
+        renderMovies(ctx.movies.stream()
+        .filter(m -> ctx.activeUser.watchlist.contains(m.id))
+        .collect(Collectors.toList()));
+    } else {
+        System.out.print("Movie ID: ");
+        int id = readInt(ctx);
+
+        if (c == 1) ctx.activeUser.watchlist.add(id);
+        if (c == 2) ctx.activeUser.watchlist.remove(id);
+    }
+
+}
+
+static void recommendMovies(Context ctx) {
+
+    Map<String, Integer> genreScore = buildGenreScore(ctx);
+
+    List<Movie> recs = ctx.movies.stream()
+    .sorted((a, b) -> Double.compare(
+    calculateScore(b, genreScore), calculateScore(a, genreScore)))
+    .limit(10)
+    .collect(Collectors.toList());
+
+}
+static void viewHistory(Context ctx) {
+
+renderMovies(ctx.activeUser.history.stream()
+
+.map(id -> ctx.movies.get(id - 1))
+
+.collect(Collectors.toList()));
+
+}
+static void compareMovies(Context ctx) {
+
+System.out.print("First Movie ID: ");
+int a = readInt(ctx);
+
+System.out.print("Second Movie ID: ");
+int b = readInt(ctx);
+
+Movie m1 = ctx.movies.get(a - 1);
+Movie m2 = ctx.movies.get(b - 1);
+
+System.out.println("Comparison Result:");
+printMovieDetail(m1);
+printMovieDetail(m2);
+
+}
+
+static void analyticsDashboard(Context ctx) {
+
+ctx.movies.stream().max(Comparator.comparingDouble(m -> m.rating))
+.ifPresent(m -> System.out.println("Top Rated: " + m.title));
+
+ctx.movies.stream().max(Comparator.comparingInt(m -> m.views))
+.ifPresent(m -> System.out.println("Most Viewed: " + m.title));
+
+Map<String, Long> genreStats =
+ctx.movies.stream().collect(Collectors.groupingBy(m -> m.genre, Collectors.counting()));
+
+genreStats.forEach((g, c) -> System.out.println(g + ": " + c));
+
+}
+static void userProfile(Context ctx) {
+
+System.out.println("User: " + ctx.activeUser.name);
+System.out.println("Ratings Given: " + ctx.activeUser.ratings.size());
+System.out.println("Watchlist Size: " + ctx.activeUser.watchlist.size());
+System.out.println("Recommendations Seen: " + ctx.activeUser.recommendationHistory.size());
+
+}
+
+static void switchUser(Context ctx) {
+
+ctx.users.forEach(u -> System.out.println(u.id + ". " + u.name));
+
+System.out.print("User ID: ");
+int id = readInt(ctx);
+
+ctx.activeUser = ctx.users.stream()
+.filter(u -> u.id == id)
+.findFirst()
+.orElse(ctx.activeUser);
+
+}
+
+static void shutdown(Context ctx) {
+
+long duration = (System.currentTimeMillis() - ctx.sessionStart) / 1000;
+System.out.println("Session Duration: " + duration + " seconds");
+System.out.println("System shutting down");
+System.exit(0);
+
+}
+static Map<String, Integer> buildGenreScore(Context ctx) {
+
+Map<String, Integer> score = new HashMap<>();
+
+ctx.activeUser.ratings.forEach((id, r) -> {
+
+if (id <= ctx.movies.size())
+score.merge(ctx.movies.get(id - 1).genre, r, Integer::sum);
+
+});
+
+ctx.activeUser.watchlist.forEach(id -> {
+
+if (id <= ctx.movies.size())
+score.merge(ctx.movies.get(id - 1).genre, 2, Integer::sum);
+
+});
+
+return score;
+
+}
+
+static double calculateScore(Movie m, Map<String, Integer> s) {
+
+return m.rating * 2.5 + m.views * 0.01 + s.getOrDefault(m.genre, 0) * 3;
+
+}
+
+static void explainRecommendations(List<Movie> list, Map<String, Integer> score) {
+
+System.out.println("Why these movies?");
+
+list.forEach(m ->
+System.out.println(m.title + " → Genre affinity: " + score.getOrDefault(m.genre, 0))
+);
+
+}
+static void renderMovies(List<Movie> list) {
+
+if (list.isEmpty()) {
+System.out.println("No movies found");
+return;
+}
+
+list.forEach(CineVerse::printMovieSummary);
+
+}
+
+static void printMovieSummary(Movie m) {
+
+System.out.println(m.id + ". " + m.title + " | " + m.genre + " | " + m.year + " | ★" + m.rating);
+
+}
+
+static void printMovieDetail(Movie m) {
+
+System.out.println("------");
+
+System.out.println("Title: " + m.title);
+System.out.println("Genre: " + m.genre);
+System.out.println("Director: " + m.director);
+System.out.println("Year: " + m.year);
+System.out.println("Rating: " + m.rating);
+System.out.println("Views: " + m.views);
+
+}
+static int readInt(Context ctx) {
+
+while (true) {
+try {
+return Integer.parseInt(ctx.scanner.nextLine());
+} catch (Exception e) {
+System.out.print("Enter valid number: ");
+}
+}
+
+}
+
+static int parseIntSafe(String s) {
+try { return Integer.parseInt(s.trim()); }
+catch (Exception e) { return 0; }
+}
+
+static double parseDoubleSafe(String s) {
+try { return Double.parseDouble(s.trim()); }
+catch (Exception e) { return 0.0; }
+}
